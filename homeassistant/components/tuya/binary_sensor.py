@@ -39,7 +39,7 @@ class TuyaFaultSensorEntityDescription(BinarySensorEntityDescription):
 
     # Fault key, and keys, used to determine if a specific fault is active
     fault_key: str | None = None
-    fault_keys: list[str] | None = None
+    fault_idx: int | None = None
 
 
 # Commonly used sensors
@@ -409,12 +409,12 @@ async def async_setup_entry(
                                 translation_key=fault_label,
                                 key=f"{DPCode.FAULT}_{fault_label}",
                                 fault_key=fault_label,
-                                fault_keys=fault_labels,
+                                fault_idx=idx,
                                 device_class=BinarySensorDeviceClass.PROBLEM,
                                 entity_category=EntityCategory.DIAGNOSTIC,
                             ),
                         )
-                        for fault_label in fault_labels
+                        for idx, fault_label in enumerate(fault_labels)
                     ]
                 )
 
@@ -481,9 +481,8 @@ class TuyaFaultSensorEntity(TuyaEntity, BinarySensorEntity):
         fault_key = self.entity_description.fault_key
         if fault_key is None:
             return False
-
-        fault_keys = self.entity_description.fault_keys
-        if fault_keys is None:
+        fault_idx = self.entity_description.fault_idx
+        if fault_idx is None:
             return False
 
         # Tuya documentation on bitmaps:
@@ -494,6 +493,4 @@ class TuyaFaultSensorEntity(TuyaEntity, BinarySensorEntity):
         # * The first kind of fault occurs: decimal - > 1; binary - > 0001;
         # * The first and second faults occur at the same time: decimal - > 3; binary - > 0011;
         # * All faults occur simultaneously: decimal - > 15; binary - > 1111;
-        fault_bitmap = bin(self.device.status[DPCode.FAULT])[2:].zfill(len(fault_keys))
-        fault_index = len(fault_keys) - fault_keys.index(fault_key) - 1
-        return fault_bitmap[fault_index] == "1"
+        return (self.device.status[DPCode.FAULT] & (1 << fault_idx)) != 0
