@@ -38,7 +38,7 @@ class TuyaFaultSensorEntityDescription(BinarySensorEntityDescription):
     """Describes a Tuya fault sensor."""
 
     # Fault key, and keys, used to determine if a specific fault is active
-    fault_key: str | None = None
+    fault_label: str | None = None
     fault_idx: int | None = None
 
 
@@ -408,7 +408,7 @@ async def async_setup_entry(
                                 name=fault_label,
                                 translation_key=fault_label,
                                 key=f"{DPCode.FAULT}_{fault_label}",
-                                fault_key=fault_label,
+                                fault_label=fault_label,
                                 fault_idx=idx,
                                 device_class=BinarySensorDeviceClass.PROBLEM,
                                 entity_category=EntityCategory.DIAGNOSTIC,
@@ -478,9 +478,6 @@ class TuyaFaultSensorEntity(TuyaEntity, BinarySensorEntity):
         if DPCode.FAULT not in self.device.status:
             return False
 
-        fault_key = self.entity_description.fault_key
-        if fault_key is None:
-            return False
         fault_idx = self.entity_description.fault_idx
         if fault_idx is None:
             return False
